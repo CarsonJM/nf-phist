@@ -58,6 +58,9 @@ process PHIST {
     tag "${meta.id}"
     label "process_high"
     storeDir "tmp/phist/${meta.id}"
+    containerOptions "${ workflow.containerEngine == 'singularity' ?
+        '-B ./' :
+        '' }"
 
     conda "envs/phist.yml"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
