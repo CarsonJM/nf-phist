@@ -30,7 +30,7 @@ micromamba activate nextflow
 
 Then just run the pipeline!
 ```
-nextflow run CarsonJM/nf-phist --profile test,<docker/singularity/conda/mamba>
+nextflow run CarsonJM/nf-phist -profile test,<docker/singularity/conda/mamba>
 ```
 
 ### Output

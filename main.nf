@@ -118,7 +118,7 @@ process COMBINE_PHIST {
     """
     # iterate over phist tables
     for table in ${phist_tables[0]}; do
-        head -n 2 \${table} > ${params.output}
+       head -n 2 \${table} > ${params.output}
     done
 
     for table in ${phist_tables}; do
@@ -129,8 +129,9 @@ process COMBINE_PHIST {
 
 // Run entry workflow
 workflow {
+    main:
     // Check if output file already exists
-    def output_file = file(params.output)
+    def output_file = file("${params.output}")
     if (!output_file.exists()) {
 
         // 1. Split input files into chunks of X genomes (Nextflow)
@@ -166,25 +167,27 @@ workflow {
         COMBINE_PHIST(
             PHIST.out.phist_tables.map { _meta, tables -> [ tables ] }.collect()
         )
-
     } else {
         println "Output file [${params.output}] already exists! Skipping nf-phist."
     }
 
     // Delete intermediate and Nextflow-specific files
-    workflow.onComplete = {
-        def work_dir = new File("${workflow.launchDir}/work/")
-        def tmp_dir = new File("${workflow.launchDir}/tmp/")
-        def nextflow_dir = new File("${workflow.launchDir}/.nextflow/")
-        def launch_dir = new File("${workflow.launchDir}")
+    workflow.onComplete {
+        if (output_file.exists()) {
+            def work_dir = new File("./work/")
+            def tmp_dir = new File("./tmp/")
+            def nextflow_dir = new File("./.nextflow/")
+            def launch_dir = new File(".")
 
-        work_dir.deleteDir()
-        tmp_dir.deleteDir()
-        nextflow_dir.deleteDir()
-        launch_dir.eachFileRecurse { file ->
-            if (file.name ==~ /\.nextflow\.log.*/) {
-                file.delete()
+            work_dir.deleteDir()
+            tmp_dir.deleteDir()
+            nextflow_dir.deleteDir()
+            launch_dir.eachFileRecurse { file ->
+                if (file.name ==~ /\.nextflow\.log.*/) {
+                    file.delete()
+                }
             }
         }
     }
 }
+
