@@ -34,7 +34,7 @@ process ARIA2C {
     tuple val(meta), val(urls)
 
     output:
-    tuple val(meta), path("host_fastas/*")      , emit: host_fastas
+    tuple val(meta), path("host_fastas/")       , emit: host_fastas
     tuple val(meta), path("download_complete")  , emit: download_complete
 
     script:
@@ -58,9 +58,9 @@ process PHIST {
     tag "${meta.id}"
     label "process_high"
     storeDir "tmp/phist/${meta.id}"
-    // containerOptions "${ workflow.containerEngine == 'singularity' ?
-    //     '-B ' + workflow.launchDir :
-    //     '' }"
+    containerOptions "${ workflow.containerEngine == 'singularity' ?
+        '-B ' + workflow.launchDir :
+        '' }"
 
     conda "envs/phist.yml"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
