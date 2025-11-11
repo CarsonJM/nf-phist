@@ -59,7 +59,7 @@ process PHIST {
     label "process_high"
     storeDir "tmp/phist/${meta.id}"
     containerOptions "${ workflow.containerEngine == 'singularity' ?
-        '-B ./' :
+        '-B ' + workflow.launchDir :
         '' }"
 
     conda "envs/phist.yml"
