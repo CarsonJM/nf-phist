@@ -16,7 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Optimized workflow by building virus kmer-db once and caching it using `storeDir` in `CREATE_VIRUS_DB` process
 - Modified PHIST process to accept pre-built virus kmer-db file as input parameter instead of building it internally
 - Refactored `phist.py` script to accept `virus_db` input parameter and removed internal kmer-db build logic
-- Increased `process_high` memory allocation from previous configuration to 96GB
+- Increased `process_high` memory allocation from 48GB to 96GB
+- Default `--chunk_size` increased from 1,000 to 10,000
+- Added `Usage` section to README
 
 ### `Fixed`
 
