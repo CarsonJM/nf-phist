@@ -35,9 +35,13 @@ nextflow run CarsonJM/nf-phist -profile test,<docker/singularity/conda/mamba>
 
 ### Usage
 The only arguments for this tool are:
+
 `--virus_fasta`: Path (or URL) to a FastA file of viral genomes.
+
 `--host_file`: Path (or URL) to a TXT file of containing paths (or URLs) to host FastA files.
+
 `--chunk_size`: Number (Integer) of host sequences contained in each chunk (default: 10,000)
+
 `--output`: Path to output TSV file containing information on all spacer-virus hits.
 
 ### Output
