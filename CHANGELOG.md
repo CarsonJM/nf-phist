@@ -22,12 +22,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Dependencies`
 
-| Tool       | Version used 
-| ---------- | ----------- |
-| aria2      | 1.36.0      |
-| python     | 3.14.0      |
-| kmer-db    | 2.3.1       |
-
 ### `Deprecated`
 
 ## v1.0.0 - [2025-11-11]
