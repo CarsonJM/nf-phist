@@ -20,10 +20,40 @@
     DEFINE FUNCTIONS / MODULES / SUBWORKFLOWS / WORKFLOWS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
+process CREATE_VIRUS_DB {
+    label "process_super_high"
+    storeDir "tmp/create_virus_db/"
+
+    conda "envs/phist.yml"
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        'https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/b7/b72245719494da16ebe64f0f73e8f29f9880bb89dce1065a5d30c72b82f7cf68/data' :
+        'community.wave.seqera.io/library/kmer-db_python:2fcd54c55e4e0870' }"
+
+    input:
+    path(virus_fasta)
+
+    output:
+    path("virus.kdb")   , emit: virus_db
+
+    script:
+    """
+    # build kmer-db from virus fasta
+    echo "${virus_fasta}" > virus.list
+
+    kmer-db build \\
+        -k 25 \\
+        -t ${task.cpus} \\
+        -multisample-fasta \\
+        virus.list \\
+        virus.kdb
+    """
+}
+
 process ARIA2C {
     tag "${meta.id}"
     label "process_medium"
     storeDir "tmp/aria2c/${meta.id}"
+    maxForks 50
 
     conda "envs/aria2c.yml"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
@@ -69,7 +99,7 @@ process PHIST {
 
     input:
     tuple val(meta), val(host_fastas)
-    path(virus_fasta)
+    path(virus_db)
 
     output:
     tuple val(meta), path("${meta.id}.phist_table.csv") , emit: phist_tables
@@ -78,8 +108,8 @@ process PHIST {
     """
     # run phist on virus fasta and host fasta chunk
     phist.py \\
-        ${virus_fasta} \\
-        ${host_fastas} \\
+        ${virus_db} \\
+        ${host_fastas}/ \\
         ${meta.id}.phist_table.csv \\
         ${meta.id}.phist_preds.csv \\
         -t ${task.cpus}
@@ -149,6 +179,12 @@ workflow {
                 [ [ id: 'chunk_' + index ], file ]
             }
 
+        // 1.1 Create virus kmer-db
+        CREATE_VIRUS_DB(
+            ch_virus_fasta.first()
+        )
+
+
         // 2. Download genome chunks (process - aria2c)
         ARIA2C(
             ch_host_fastas
@@ -157,7 +193,7 @@ workflow {
         // 3. Run downloaded chunks through PHIST (process - phist)
         PHIST(
             ARIA2C.out.host_fastas,
-            ch_virus_fasta
+            CREATE_VIRUS_DB.out.virus_db
         )
 
         // 4. Delete downloaded chunks that have been run through phist (process - rm)

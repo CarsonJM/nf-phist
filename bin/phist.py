@@ -21,8 +21,8 @@ __version__ = '1.2.1'
 def get_parser() -> argparse.ArgumentParser:
     desc = f'PHIST predicts hosts from phage (meta)genomic data'
     p = argparse.ArgumentParser(description=desc)
-    p.add_argument('virus_path',
-                   help='Input FASTA file or directory with FASTA files (plain or gzip)')
+    p.add_argument('virus_db',
+                   help='Input kmer-db file built from virus FASTA files')
     p.add_argument('host_dir', metavar='host_dir',
                    help='Input directory w/ host FASTA files (plain or gzip)')
     p.add_argument('out_dir', metavar='out_dir', nargs='+',
@@ -60,16 +60,16 @@ def validate_args(parser: argparse.ArgumentParser) -> argparse.Namespace:
         parser.error(f'K-mer length should be in range 3-30.')
 
     # Validate virus input
-    v_path = Path(args.virus_path)
-    if not v_path.exists():
-        parser.error(f'Virus input does not exist: {v_path}')
+    virus_db = Path(args.virus_db)
+    if not virus_db.exists():
+        parser.error(f'Virus kmer-db does not exist: {virus_db}')
 
     # Validate host input
     hdir_path = Path(args.host_dir)
     if not hdir_path.exists() or not hdir_path.is_dir():
         parser.error(f'Input host directory does not exist: {hdir_path}')
 
-    args.v_path = v_path
+    args.virus_db = virus_db
     args.hdir_path = hdir_path
 
     # Validate output files
@@ -88,7 +88,6 @@ if __name__ == '__main__':
     
     PHIST_DIR = Path(__file__).resolve().parent
 
-    kmer_exec = PHIST_DIR.joinpath('kmer-db')
     util_exec = PHIST_DIR.joinpath('phist')
 
     parser = get_parser()
@@ -98,24 +97,14 @@ if __name__ == '__main__':
         f'PHIST  v{__version__}\n',
         'A. Zielezinski, S. Deorowicz, A. Gudys (c) 2021\n\n')
 
-    v_path = args.v_path
+    virus_db = args.virus_db
     hdir_path = args.hdir_path
     out_dir = args.out_dir
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # Paths to temp files
-    vlst_path = out_dir / 'virus.list'
     hlst_path = out_dir / 'host.list'
     db_path = out_dir / 'virus.kdb'
-
-    # Create virus.lst
-    with open(vlst_path, 'w') as oh:
-        if v_path.is_dir():
-            for f in sorted(v_path.rglob('*')):
-                if f.is_file():
-                    oh.write(f'{f}\n')
-        else:
-            oh.write(f'{v_path}')
 
     # Create host.list.
     with open(hlst_path, 'w') as oh:
@@ -124,29 +113,16 @@ if __name__ == '__main__':
                 oh.write(f"{f}\n")
         oh.close()
 
-    # Kmer-db build
-    cmd = [
-        f'{kmer_exec}',
-        'build',
-        '-k',
-        f'{args.k}',
-        '-t',
-        f'{args.num_threads}',
-        f'{vlst_path}',
-        f'{db_path}',
-    ]
-    if v_path.is_file():
-        cmd.insert(6, '-multisample-fasta')
-    subprocess.run(cmd)
-
     # Kmer-db new2all
     cmd = [
-        f'{kmer_exec}',
+        f'kmer-db',
         'new2all',
         '-sparse',
+        '-min',
+        'num-kmers:20',
         '-t',
         f'{args.num_threads}',
-        f'{db_path}',
+        f'{virus_db}',
         f'{hlst_path}',
         f'{args.outtable_path}',
     ]
@@ -154,9 +130,8 @@ if __name__ == '__main__':
 
     # Remove temp files.
     if not args.keep_temp:
-        vlst_path.unlink()
         hlst_path.unlink()
-        db_path.unlink()  
+        db_path.unlink()
     
     # Postprocessing
     cmd = [
